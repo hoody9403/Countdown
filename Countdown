@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>月曆樣式倒數日</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .calendar-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            padding: 20px;
+            max-width: 800px;
+            width: 90%;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .month-year {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .nav-button {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        .weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+        }
+        .day {
+            aspect-ratio: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .day:hover {
+            background-color: #f0f0f0;
+        }
+        .day.selected {
+            background-color: #3498db;
+            color: white;
+        }
+        .day.today {
+            border-color: #3498db;
+            font-weight: bold;
+        }
+        .countdown {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 18px;
+        }
+        #targetDate, #eventName {
+            width: calc(50% - 10px);
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="calendar-container">
+        <div class="header">
+            <button class="nav-button" onclick="changeMonth(-1)">&#10094;</button>
+            <div class="month-year" id="monthYear"></div>
+            <button class="nav-button" onclick="changeMonth(1)">&#10095;</button>
+        </div>
+        <div class="weekdays">
+            <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
+        </div>
+        <div class="days" id="daysContainer"></div>
+        <div class="countdown" id="countdown"></div>
+        <input type="text" id="eventName" placeholder="事件名稱">
+        <input type="date" id="targetDate">
+        <button onclick="setCountdown()">設置倒數</button>
+    </div>
+
+    <script>
+        let currentDate = new Date();
+        let selectedDate = null;
+        let eventName = "";
+
+        function renderCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            
+            document.getElementById('monthYear').textContent = `${year}年 ${month + 1}月`;
+            
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysContainer = document.getElementById('daysContainer');
+            daysContainer.innerHTML = '';
+
+            for (let i = 0; i < firstDay.getDay(); i++) {
+                daysContainer.appendChild(document.createElement('div'));
+            }
+
+            for (let day = 1; day <= lastDay.getDate(); day++) {
+                const dayElement = document.createElement('div');
+                dayElement.classList.add('day');
+                dayElement.textContent = day;
+                dayElement.onclick = () => selectDate(new Date(year, month, day));
+
+                if (day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear()) {
+                    dayElement.classList.add('today');
+                }
+
+                if (selectedDate && day === selectedDate.getDate() && month === selectedDate.getMonth() && year === selectedDate.getFullYear()) {
+                    dayElement.classList.add('selected');
+                }
+
+                daysContainer.appendChild(dayElement);
+            }
+        }
+
+        function selectDate(date) {
+            selectedDate = date;
+            document.getElementById('targetDate').value = date.toISOString().split('T')[0];
+            renderCalendar();
+            updateCountdown();
+        }
+
+        function changeMonth(delta) {
+            currentDate.setMonth(currentDate.getMonth() + delta);
+            renderCalendar();
+        }
+
+        function setCountdown() {
+            selectedDate = new Date(document.getElementById('targetDate').value);
+            eventName = document.getElementById('eventName').value;
+            currentDate = new Date(selectedDate);
+            renderCalendar();
+            updateCountdown();
+        }
+
+        function updateCountdown() {
+            if (!selectedDate) return;
+
+            const now = new Date();
+            const difference = selectedDate - now;
+
+            if (difference > 0) {
+                const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+                const countdownText = `距離 ${eventName || '目標日期'} 還有 ${days} 天 ${hours} 小時 ${minutes} 分鐘`;
+                document.getElementById('countdown').textContent = countdownText;
+            } else {
+                document.getElementById('countdown').textContent = `${eventName || '目標日期'}已到達！`;
+            }
+        }
+
+        renderCalendar();
+        setInterval(updateCountdown, 60000); // 每分鐘更新一次
+    </script>
+</body>
+</html>
